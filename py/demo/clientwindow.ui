@@ -184,10 +184,10 @@
         <child>
           <object class="ttk.Scale" id="SquelchScale">
             <property name="command">handleSquelchSlider</property>
-            <property name="from_">100</property>
+            <property name="from_">0</property>
             <property name="length">225</property>
             <property name="orient">vertical</property>
-            <property name="to">50</property>
+            <property name="to">-100</property>
             <property name="value">50</property>
             <layout>
               <property name="column">0</property>
