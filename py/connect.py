@@ -8,9 +8,10 @@ from PySide2.QtGui import QMovie, QPixmap
 from socket import *
 
 import common
+import constants
 
 class ConnectDialog:
-    def __init__(self, parentWindow):
+    def __init__(self, parentWindow, address=None, port=None):
         self.widget = parentWindow.findChild(QWidget, 'connectPage')
         self.errorLabel = parentWindow.findChild(QLabel, 'connect_errorLabel')
         self.confirmButton = parentWindow.findChild(QPushButton, 'connect_confirmButton')
@@ -29,20 +30,29 @@ class ConnectDialog:
 
         self.errorLabel.setVisible(False)
 
+        self.hostLineEdit.setText(constants.DEFAULT_ADDRESS)
+        self.portLineEdit.setText(str(constants.DEFAULT_TCP_PORT))
+
         self.confirmButton.clicked.connect(self.onConfirm)
         self.hostLineEdit.returnPressed.connect(self.onConfirm)
         self.portLineEdit.returnPressed.connect(self.onConfirm)
 
     def onConfirm(self):
+        host = self.hostLineEdit.text()
+        port = int(self.portLineEdit.text())
+        self.tryConnect(host, port)
+
+    def tryConnect(self, address, port):
         print('connect confirm')
         try:
             self.connectIndicator.setVisible(True)
             self.errorLabel.setVisible(False)
+            self.hostLineEdit.setText(address)
+            self.portLineEdit.setText(str(port))
             self.widget.repaint()
-            host = self.hostLineEdit.text()
-            port = int(self.portLineEdit.text())
-            print('Connecting to ', host, ':', port)
-            dest = (host, port)
+            
+            print('Connecting to ', address, ':', port)
+            dest = (address, port)
 
             sock = socket(AF_INET, SOCK_STREAM)
             sock.connect(dest)

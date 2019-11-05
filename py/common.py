@@ -22,10 +22,47 @@ class ScannerMode(Enum):
     RECEIVE = 1
 
 class DialogMode(Enum):
-    MANUAL_ENTRY = 1
-    EDIT_ENTRY = 2
-    SYSTEM_BROWSER = 3
+    MANUAL_ENTRY = 0
+    EDIT_ENTRY = 1
+    SYSTEM_BROWSER = 2
+    SYSTEM_SETTINGS = 3
 
 class AppInterface:
     def completeConnection(self, sock):
+        pass
+
+    def scan(self):
+        pass
+
+    def hold(self):
+        pass
+
+    def manualEntry(self, frequency, modulation):
+        pass
+
+    def showManualEntryDialog(self):
+        pass
+
+    def showEditEntryDialog(self):
+        pass
+
+    def showEntryBrowser(self):
+        pass
+
+    def showSettingsDialog(self):
+        pass
+
+    def setGain(self, value):
+        pass
+
+    def setSquelch(self, value):
+        pass
+
+    def dialogClosed(self):
+        pass
+
+    def closeEvent(self, event):
+        pass
+
+    def tryConnect(self, address, port):
         pass

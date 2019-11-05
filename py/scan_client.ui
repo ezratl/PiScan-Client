@@ -1516,13 +1516,72 @@
        <item>
         <widget class="QFrame" name="scanContextFrame">
          <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
            <widget class="QStackedWidget" name="scanContextStack">
             <property name="currentIndex">
              <number>1</number>
             </property>
+            <widget class="QWidget" name="scanner_scanPage">
+             <layout class="QGridLayout" name="gridLayout_5">
+              <item row="0" column="0">
+               <widget class="QLabel" name="scanner_scanningLabel">
+                <property name="font">
+                 <font>
+                  <pointsize>24</pointsize>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Scanning</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="scanner_scanIndicator">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="textFormat">
+                 <enum>Qt::RichText</enum>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="resources/resources.qrc">:/indicator/bar-scan.gif</pixmap>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignHCenter|Qt::AlignTop</set>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
             <widget class="QWidget" name="scanner_holdPage">
              <layout class="QVBoxLayout" name="verticalLayout_6">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
               <item>
                <widget class="QWidget" name="widget_4" native="true">
                 <property name="sizePolicy">
@@ -1582,7 +1641,7 @@
                <widget class="QLabel" name="scanner_systemTagLabel">
                 <property name="font">
                  <font>
-                  <pointsize>24</pointsize>
+                  <pointsize>20</pointsize>
                  </font>
                 </property>
                 <property name="text">
@@ -1597,7 +1656,7 @@
                <widget class="QLabel" name="scanner_entryTagLabel">
                 <property name="font">
                  <font>
-                  <pointsize>24</pointsize>
+                  <pointsize>20</pointsize>
                  </font>
                 </property>
                 <property name="text">
@@ -1641,41 +1700,6 @@
                 </property>
                 <property name="text">
                  <string>000.0000 MHz</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="scanner_scanPage">
-             <layout class="QGridLayout" name="gridLayout_5">
-              <item row="0" column="0">
-               <widget class="QLabel" name="scanner_scanningLabel">
-                <property name="font">
-                 <font>
-                  <pointsize>24</pointsize>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Scanning</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignBottom|Qt::AlignHCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="scanner_scanIndicator">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="textFormat">
-                 <enum>Qt::RichText</enum>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="resources/resources.qrc">:/indicator/bar-scan.gif</pixmap>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignHCenter|Qt::AlignTop</set>
                 </property>
                </widget>
               </item>
@@ -1747,6 +1771,15 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="minimum">
+                <number>-100</number>
+               </property>
+               <property name="maximum">
+                <number>0</number>
+               </property>
+               <property name="notchesVisible">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
@@ -1777,6 +1810,12 @@
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="maximum">
+                <number>50</number>
+               </property>
+               <property name="notchesVisible">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -2360,7 +2399,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>478</width>
-                <height>273</height>
+                <height>262</height>
                </rect>
               </property>
               <layout class="QFormLayout" name="formLayout">
@@ -3699,8 +3738,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>464</width>
-                <height>259</height>
+                <width>460</width>
+                <height>244</height>
                </rect>
               </property>
               <layout class="QFormLayout" name="formLayout_2">

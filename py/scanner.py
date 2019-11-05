@@ -10,6 +10,9 @@ import request_pb2
 import google.protobuf.message as proto
 
 class Scanner:
+    gainFromContext = False
+    squelchFromContext = False
+
     def __init__(self, parentWindow):
         self.widget = parentWindow.findChild(QWidget, 'scannerPage')
         self.contextStack = parentWindow.findChild(QStackedWidget, 'scanContextStack')
@@ -30,6 +33,16 @@ class Scanner:
         self.fnButton2 = parentWindow.findChild(QPushButton, 'scanner_fnButton2')
         self.fnButton3 = parentWindow.findChild(QPushButton, 'scanner_fnButton3')
         self.fnButton4 = parentWindow.findChild(QPushButton, 'scanner_fnButton4')
+
+        self.fnButton1.clicked.connect(self.onFnButton1)
+        self.fnButton2.clicked.connect(self.onFnButton2)
+        self.fnButton3.clicked.connect(self.onFnButton3)
+        self.fnButton4.clicked.connect(self.onFnButton4)
+        self.gainDial.valueChanged.connect(self.onGainDial)
+        self.squelchDial.valueChanged.connect(self.onSquelchDial)
+
+        #temporary since settins dialog is not yet implemented
+        self.fnButton4.setEnabled(False)
 
         movie = QMovie("resources/bar-scan.gif")
         movie.start()
@@ -59,12 +72,20 @@ class Scanner:
 
         self.setMode(common.ScannerMode.SCANNING)
 
+        self.lastGainVal = 0
+        self.lastSquelchSlide = 0
+        self.gainTimer = QTimer()
+        self.gainTimer.setInterval(100)
+        self.gainTimer.setSingleShot(True)
+        self.gainTimer.timeout.connect(self.setGain)
+
     def setMode(self, mode):
         self.contextStack.setCurrentIndex(mode.value)
 
     def updateScanContext(self, context):
         if context.state == context_pb2.ScannerContext.State.SCAN:
             self.setMode(common.ScannerMode.SCANNING)
+            self.sigStrengthBar.setValue(0)
         else:
             if context.state == context_pb2.ScannerContext.State.HOLD:
                 self.sigStrengthBar.setValue(0)
@@ -93,6 +114,8 @@ class Scanner:
                 self.setMode(common.ScannerMode.RECEIVE)
 
     def updateDemodContext(self, context):
+        squelchFromContext = True
+        gainFromContext = True
         #SquelchScale.configure(value=context.squelch)
         self.squelchDial.setValue(context.squelch)
         self.squelchLabel.setText(str(context.squelch))
@@ -105,4 +128,37 @@ class Scanner:
             self.gainLabel.setText('Auto')
         else:
             #GainLabel.configure(text=context.gain)
-            self.gainLabel.setText(str(context.gain))
+            self.gainLabel.setText(str(int(context.gain)))
+
+    def onFnButton1(self):
+        common.getApp().scan()
+
+    def onFnButton2(self):
+        common.getApp().hold()
+
+    def onFnButton3(self):
+        common.getApp().showManualEntryDialog()
+
+    def onFnButton4(self):
+        common.getApp().showSettingsDialog()
+
+    def onGainDial(self):
+        if self.gainFromContext:
+            self.gainFromContext = False
+        else:
+            self.lastGainVal = self.gainDial.value()
+            self.gainTimer.start()
+
+    def setGain(self):
+        self._job = None
+        val = float(self.lastGainVal)
+        common.getApp().setGain(val)
+
+    def onSquelchDial(self):
+        if self.squelchFromContext:
+            self.squelchFromContext = False
+        else:
+            val = float(self.squelchDial.value())
+            #if abs(val - self.lastSquelchSlide) < 0.5:
+            common.getApp().setSquelch(val)
+            self.lastSquelchSlide = val
