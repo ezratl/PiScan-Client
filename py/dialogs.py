@@ -24,6 +24,7 @@ class Dialogs:
     def setDialog(self, dialog):
         self.dialogStackWidget.setCurrentIndex(dialog.value)
         self.dialogStack.append(dialog.value)
+        self.updateTitle()
 
     def updateTitle(self):
         val = self.dialogStackWidget.currentIndex()

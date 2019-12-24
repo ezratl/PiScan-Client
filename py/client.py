@@ -66,24 +66,20 @@ class PiScanClient(QWidget, common.AppInterface):
 
     def receive(self):
         message1 = messages_pb2.ClientToServer()
-        message1.type = messages_pb2.ClientToServer.Type.GENERAL_REQUEST
-        message1.generalRequest.type = request_pb2.GeneralRequest.RequestType.SCANNER_CONTEXT
+        message1.type = messages_pb2.ClientToServer.Type.Value('GENERAL_REQUEST')
+        message1.generalRequest.type = request_pb2.GeneralRequest.RequestType.Value('SCANNER_CONTEXT')
         self.sock.send(message1.SerializeToString())
         message2 = messages_pb2.ClientToServer()
-        message2.type = messages_pb2.ClientToServer.Type.GENERAL_REQUEST
-        message2.generalRequest.type = request_pb2.GeneralRequest.RequestType.DEMOD_CONTEXT
+        message2.type = messages_pb2.ClientToServer.Type.Value('GENERAL_REQUEST')
+        message2.generalRequest.type = request_pb2.GeneralRequest.RequestType.Value('DEMOD_CONTEXT')
         self.sock.send(message2.SerializeToString())
         
         while True:
             try:
                 data = self.sock.recv(2048)
                 self.dataReceived.emit(data)
-            except OSError as os_error:
-                print(os_error)
+            except:
                 break
-            except proto.DecodeError as e:
-                print("Parse error")
-                print(e)
 
         print("Closing connection")
 
@@ -93,9 +89,12 @@ class PiScanClient(QWidget, common.AppInterface):
 
     def decodeMessage(self, message):
         print(message)
-        if message.type == messages_pb2.ServerToClient.Type.SCANNER_CONTEXT:
+        if message.type == messages_pb2.ServerToClient.Type.Value('SCANNER_CONTEXT'):
             self.scanner.updateScanContext(message.scannerContext)
-        elif message.type == messages_pb2.ServerToClient.Type.DEMOD_CONTEXT:
+            if self.contextWait:
+                self.setWindowMode(common.WindowMode.SCANNER)
+                self.contextWait = False
+        elif message.type == messages_pb2.ServerToClient.Type.Value('DEMOD_CONTEXT'):
             self.scanner.updateDemodContext(message.demodContext)
 
     def closeEvent(self, event):
@@ -103,7 +102,7 @@ class PiScanClient(QWidget, common.AppInterface):
         try:
             if self.sock:
                 self.sock.close()
-                self.rcv_thread.join()
+                #self.rcv_thread.join()
         except:
             pass
 
@@ -113,24 +112,25 @@ class PiScanClient(QWidget, common.AppInterface):
         self.sock = sock
         self.rcv_thread = Thread(target=self.receive)
         self.rcv_thread.start()
-        self.setWindowMode(common.WindowMode.SCANNER)
+        self.contextWait = True
+        self.connectDialog.contextWait()
 
     def scan(self):
         message = messages_pb2.ClientToServer()
-        message.type = messages_pb2.ClientToServer.Type.SCANNER_STATE_REQUEST
-        message.scanStateRequest.state = request_pb2.ScannerStateRequest.NewState.SCAN
+        message.type = messages_pb2.ClientToServer.Type.Value('SCANNER_STATE_REQUEST')
+        message.scanStateRequest.state = request_pb2.ScannerStateRequest.NewState.Value('SCAN')
         self.sock.send(message.SerializeToString())
 
     def hold(self):
         message = messages_pb2.ClientToServer()
-        message.type = messages_pb2.ClientToServer.Type.SCANNER_STATE_REQUEST
-        message.scanStateRequest.state = request_pb2.ScannerStateRequest.NewState.HOLD
+        message.type = messages_pb2.ClientToServer.Type.Value('SCANNER_STATE_REQUEST')
+        message.scanStateRequest.state = request_pb2.ScannerStateRequest.NewState.Value('HOLD')
         self.sock.send(message.SerializeToString())
 
     def manualEntry(self, frequency, modulation):
         message = messages_pb2.ClientToServer()
-        message.type = messages_pb2.ClientToServer.Type.SCANNER_STATE_REQUEST
-        message.scanStateRequest.state = request_pb2.ScannerStateRequest.NewState.MANUAL
+        message.type = messages_pb2.ClientToServer.Type.Value('SCANNER_STATE_REQUEST')
+        message.scanStateRequest.state = request_pb2.ScannerStateRequest.NewState.Value('MANUAL')
         message.scanStateRequest.manFreq = frequency
         self.sock.send(message.SerializeToString())
 
@@ -152,15 +152,15 @@ class PiScanClient(QWidget, common.AppInterface):
 
     def setGain(self, value):
         message = messages_pb2.ClientToServer()
-        message.type = messages_pb2.ClientToServer.Type.DEMOD_REQUEST
-        message.demodRequest.type = request_pb2.DemodRequest.DemodFunc.SET_GAIN
+        message.type = messages_pb2.ClientToServer.Type.Value('DEMOD_REQUEST')
+        message.demodRequest.type = request_pb2.DemodRequest.DemodFunc.Value('SET_GAIN')
         message.demodRequest.level = value
         self.sock.send(message.SerializeToString())
 
     def setSquelch(self, value):
         message = messages_pb2.ClientToServer()
-        message.type = messages_pb2.ClientToServer.Type.DEMOD_REQUEST
-        message.demodRequest.type = request_pb2.DemodRequest.DemodFunc.SET_SQUELCH
+        message.type = messages_pb2.ClientToServer.Type.Value('DEMOD_REQUEST')
+        message.demodRequest.type = request_pb2.DemodRequest.DemodFunc.Value('SET_SQUELCH')
         message.demodRequest.level = value
         self.sock.send(message.SerializeToString())
 
@@ -184,7 +184,7 @@ class HostWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(mainWidget)
         #self.actionQuit.triggered.connect(self.closeEvent)
 
-        self.show()
+        #self.show()
 
         if address:
             if not port:
@@ -197,13 +197,14 @@ class HostWindow(QtWidgets.QMainWindow):
         event.accept()
 
 if __name__ == '__main__':
-    shortOpts = 'la:p:'
-    longOpts = ['--local', '--address', '--port']
+    shortOpts = 'la:p:w'
+    longOpts = ['--local', '--address', '--port', '--pi_mode']
 
     options, remainder = getopt.getopt(sys.argv[1:], shortOpts, longOpts)
 
     address = None
     port = None
+    piMode = False
 
     for opt, arg in options:
         if opt in ('-l', '--local'):
@@ -212,9 +213,18 @@ if __name__ == '__main__':
             address = arg
         elif opt in ('-p', '--port'):
             port = int(arg)
+        elif opt in ('-w', '--pi_mode'):
+            piMode = True
 
     app = QApplication(sys.argv)
     window = HostWindow(address=address, port=port)
+    if piMode:
+        flags = Qt.WindowFlags(Qt.CustomizeWindowHint | Qt.FramelessWindowHint | Qt.Tool)
+        window.setWindowFlags(flags)
+        window.showMaximized()
+    else:
+        window.show()
+
     sys.exit(app.exec_())
 
 

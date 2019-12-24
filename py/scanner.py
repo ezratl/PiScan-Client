@@ -16,6 +16,8 @@ class Scanner:
     def __init__(self, parentWindow):
         self.widget = parentWindow.findChild(QWidget, 'scannerPage')
         self.contextStack = parentWindow.findChild(QStackedWidget, 'scanContextStack')
+        self.holdPage = parentWindow.findChild(QWidget, 'scanner_holdPage')
+        self.scanPage = parentWindow.findChild(QWidget, 'scanner_scanPage')
         self.entryTagLabel = parentWindow.findChild(QLabel, 'scanner_entryTagLabel')
         self.frequencyLabel = parentWindow.findChild(QLabel, 'scanner_frequencyLabel')
         self.modulationLabel = parentWindow.findChild(QLabel, 'scanner_modulationLabel')
@@ -23,10 +25,10 @@ class Scanner:
         self.entryNumLabel = parentWindow.findChild(QLabel, 'scanner_entryNumLabel')
         self.lockoutCheckbox = parentWindow.findChild(QCheckBox, 'scanner_lockoutCheckbox')
         self.scanIndicator = parentWindow.findChild(QLabel, 'scanner_scanIndicator')
-        self.gainDial = parentWindow.findChild(QDial, 'scanner_gainDial')
+        self.gainSlider = parentWindow.findChild(QSlider, 'scanner_gainSlider')
         ##self.gainLabel = parentWindow.findChild(QLabel, 'scanner_gainLabel')
         self.sigStrengthBar = parentWindow.findChild(QProgressBar, 'scanner_sigStrengthBar')
-        self.squelchDial = parentWindow.findChild(QDial, 'scanner_squelchDial')
+        self.squelchSlider = parentWindow.findChild(QSlider, 'scanner_squelchSlider')
         ##self.squelchLabel = parentWindow.findChild(QLabel, 'scanner_squelchLabel')
         self.fnButtonsWidget = parentWindow.findChild(QWidget, 'scanner_fnButtonsWidget')
         self.fnButton1 = parentWindow.findChild(QPushButton, 'scanner_fnButton1')
@@ -34,12 +36,18 @@ class Scanner:
         self.fnButton3 = parentWindow.findChild(QPushButton, 'scanner_fnButton3')
         self.fnButton4 = parentWindow.findChild(QPushButton, 'scanner_fnButton4')
 
+        self.sidebarToggleButton = parentWindow.findChild(QToolButton, 'scanner_sidebarToggle')
+        self.sidebarPanel = parentWindow.findChild(QWidget, 'scanner_sidebarPanel')
+
         self.fnButton1.clicked.connect(self.onFnButton1)
         self.fnButton2.clicked.connect(self.onFnButton2)
         self.fnButton3.clicked.connect(self.onFnButton3)
         self.fnButton4.clicked.connect(self.onFnButton4)
-        self.gainDial.valueChanged.connect(self.onGainDial)
-        self.squelchDial.valueChanged.connect(self.onSquelchDial)
+        self.gainSlider.valueChanged.connect(self.ongainSlider)
+        self.squelchSlider.valueChanged.connect(self.onsquelchSlider)
+
+        self.sidebarToggleButton.clicked.connect(self.onSidebarToggle)
+        self.sidebarOpen = True
 
         #temporary since settins dialog is not yet implemented
         self.fnButton4.setEnabled(False)
@@ -49,28 +57,29 @@ class Scanner:
         self.scanIndicator.setMovie(movie)
 
         labelPalette = QPalette()
-        labelPalette.setColor(QPalette.WindowText, Qt.black)
+        labelPalette.setColor(QPalette.WindowText, Qt.white)
         labelFont = QFont()
         labelFont.setPointSize(12)
-        squelchLayout = QHBoxLayout(self.squelchDial)
+        squelchLayout = QHBoxLayout(self.squelchSlider)
         squelchLayout.setContentsMargins(0, 0, 0, 0)
         self.squelchLabel = QLabel()
-        self.squelchLabel.setAlignment(Qt.AlignCenter)
+        self.squelchLabel.setAlignment(Qt.AlignTop)
         self.squelchLabel.setPalette(labelPalette)
         self.squelchLabel.setFont(labelFont)
         self.squelchLabel.setText(str(0))
         squelchLayout.addWidget(self.squelchLabel)
 
-        gainLayout = QHBoxLayout(self.gainDial)
+        gainLayout = QHBoxLayout(self.gainSlider)
         gainLayout.setContentsMargins(0, 0, 0, 0)
         self.gainLabel = QLabel()
-        self.gainLabel.setAlignment(Qt.AlignCenter)
+        self.gainLabel.setAlignment(Qt.AlignTop)
         self.gainLabel.setPalette(labelPalette)
         self.gainLabel.setFont(labelFont)
         self.gainLabel.setText(str(0))
         gainLayout.addWidget(self.gainLabel)
 
-        self.setMode(common.ScannerMode.SCANNING)
+        #self.setMode(common.ScannerMode.SCANNING)
+        self.contextStack.setCurrentWidget(self.scanPage)
 
         self.lastGainVal = 0
         self.lastSquelchSlide = 0
@@ -79,17 +88,18 @@ class Scanner:
         self.gainTimer.setSingleShot(True)
         self.gainTimer.timeout.connect(self.setGain)
 
-    def setMode(self, mode):
-        self.contextStack.setCurrentIndex(mode.value)
+    #def setMode(self, mode):
+    #    self.contextStack.setCurrentIndex(mode.value)
 
     def updateScanContext(self, context):
-        if context.state == context_pb2.ScannerContext.State.SCAN:
-            self.setMode(common.ScannerMode.SCANNING)
+        if context.state == context_pb2.ScannerContext.State.Value('SCAN'):
+            #self.setMode(common.ScannerMode.SCANNING)
+            self.contextStack.setCurrentWidget(self.scanPage)
             self.sigStrengthBar.setValue(0)
         else:
-            if context.state == context_pb2.ScannerContext.State.HOLD:
+            if context.state == context_pb2.ScannerContext.State.Value('HOLD'):
                 self.sigStrengthBar.setValue(0)
-            elif context.state == context_pb2.ScannerContext.State.RECEIVE:
+            elif context.state == context_pb2.ScannerContext.State.Value('RECEIVE'):
                 self.sigStrengthBar.setValue(100)
 
             try:
@@ -108,19 +118,21 @@ class Scanner:
                 print('problem setting values')
 
             
-            if context.state == context_pb2.ScannerContext.State.HOLD:
-                self.setMode(common.ScannerMode.HOLD)
-            elif context.state == context_pb2.ScannerContext.State.RECEIVE:
-                self.setMode(common.ScannerMode.RECEIVE)
+            if context.state == context_pb2.ScannerContext.State.Value('HOLD'):
+                #self.setMode(common.ScannerMode.HOLD)
+                self.contextStack.setCurrentWidget(self.holdPage)
+            elif context.state == context_pb2.ScannerContext.State.Value('RECEIVE'):
+                #self.setMode(common.ScannerMode.RECEIVE)
+                self.contextStack.setCurrentWidget(self.holdPage)
 
     def updateDemodContext(self, context):
         squelchFromContext = True
         gainFromContext = True
         #SquelchScale.configure(value=context.squelch)
-        self.squelchDial.setValue(context.squelch)
+        self.squelchSlider.setValue(context.squelch)
         self.squelchLabel.setText(str(context.squelch))
         #GainScale.configure(value=context.gain)
-        self.gainDial.setValue(context.gain)
+        self.gainSlider.setValue(context.gain)
         #self.gainLabel.setText(context.gain)
 
         if context.gain < 0:
@@ -142,11 +154,11 @@ class Scanner:
     def onFnButton4(self):
         common.getApp().showSettingsDialog()
 
-    def onGainDial(self):
+    def ongainSlider(self):
         if self.gainFromContext:
             self.gainFromContext = False
         else:
-            self.lastGainVal = self.gainDial.value()
+            self.lastGainVal = self.gainSlider.value()
             self.gainTimer.start()
 
     def setGain(self):
@@ -154,11 +166,19 @@ class Scanner:
         val = float(self.lastGainVal)
         common.getApp().setGain(val)
 
-    def onSquelchDial(self):
+    def onsquelchSlider(self):
         if self.squelchFromContext:
             self.squelchFromContext = False
         else:
-            val = float(self.squelchDial.value())
+            val = float(self.squelchSlider.value())
             #if abs(val - self.lastSquelchSlide) < 0.5:
             common.getApp().setSquelch(val)
             self.lastSquelchSlide = val
+
+    def onSidebarToggle(self):
+        if self.sidebarOpen:
+            self.sidebarPanel.setVisible(False)
+            self.sidebarOpen = False
+        else:
+            self.sidebarPanel.setVisible(True)
+            self.sidebarOpen = True

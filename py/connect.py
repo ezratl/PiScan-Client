@@ -19,6 +19,8 @@ class ConnectDialog:
         self.hostLineEdit = parentWindow.findChild(QLineEdit, 'connect_hostnameLineEdit')
         self.portLineEdit = parentWindow.findChild(QLineEdit, 'connect_portLineEdit')
         self.logo = parentWindow.findChild(QLabel, 'connect_logoImage')
+        self.hostLabel = parentWindow.findChild(QLabel, 'hostLabel')
+        self.portLabel = parentWindow.findChild(QLabel, 'hostPortLabel')
 
         self.logo.setPixmap(QPixmap("resources/icon-256.png"))
         self.logo.setVisible(False)
@@ -68,6 +70,15 @@ class ConnectDialog:
             self.connectIndicator.setVisible(False)
             self.errorLabel.setText(str(e))
             self.errorLabel.setVisible(True)
+
+    def contextWait(self):
+        self.connectIndicator.setVisible(True)
+        self.errorLabel.setVisible(False)
+        self.hostLineEdit.setVisible(False)
+        self.portLineEdit.setVisible(False)
+        self.confirmButton.setVisible(False)
+        self.hostLabel.setVisible(False)
+        self.portLabel.setVisible(False)
 
 
 
