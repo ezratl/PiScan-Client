@@ -8,6 +8,8 @@ from PySide2.QtCore import *
 from socket import *
 from threading import Thread
 
+from time import sleep
+
 import common
 import constants
 import connect
@@ -34,6 +36,7 @@ class PiScanClient(QWidget, common.AppInterface):
         self.window = loader.load(ui_file)
         ui_file.close()
 
+        self.parentWindow = parent
         #layout = QGridLayout(self)
         #layout.setContentsMargins(0, 0, 0, 0)
         #layout.addWidget(self.window)
@@ -45,7 +48,8 @@ class PiScanClient(QWidget, common.AppInterface):
         self.dialogs = dialogs.Dialogs(self.window)
 
         self.contextStack = self.window.findChild(QStackedWidget, 'contextStack')
-        self.setWindowMode(common.WindowMode.CONNECT)
+        #self.setWindowMode(common.WindowMode.CONNECT)
+        self.showConnectDialog()
         #self.setWindowMode(common.WindowMode.SCANNER)
 
         #self.window.show()
@@ -65,20 +69,13 @@ class PiScanClient(QWidget, common.AppInterface):
         self.setWindowMode(common.WindowMode.DIALOG)
 
     def receive(self):
-        message1 = messages_pb2.ClientToServer()
-        message1.type = messages_pb2.ClientToServer.Type.Value('GENERAL_REQUEST')
-        message1.generalRequest.type = request_pb2.GeneralRequest.RequestType.Value('SCANNER_CONTEXT')
-        self.sock.send(message1.SerializeToString())
-        message2 = messages_pb2.ClientToServer()
-        message2.type = messages_pb2.ClientToServer.Type.Value('GENERAL_REQUEST')
-        message2.generalRequest.type = request_pb2.GeneralRequest.RequestType.Value('DEMOD_CONTEXT')
-        self.sock.send(message2.SerializeToString())
-        
         while True:
             try:
                 data = self.sock.recv(2048)
                 self.dataReceived.emit(data)
             except:
+                e = sys.exc_info()[0]
+                self.showConnectDialog(repr(e))
                 break
 
         print("Closing connection")
@@ -88,14 +85,25 @@ class PiScanClient(QWidget, common.AppInterface):
         self.decodeMessage(message=self.inmsg)
 
     def decodeMessage(self, message):
-        print(message)
-        if message.type == messages_pb2.ServerToClient.Type.Value('SCANNER_CONTEXT'):
+        #print(message)
+        if message.WhichOneof('content') == 'systemInfo':
+            print('system info')
+            self.scanner.setSquelchRange(message.systemInfo.squelchScaleMin, message.systemInfo.squelchScaleMax)
+            for mode in message.systemInfo.supportedModulations:
+                self.dialogs.manualEntry.addModulation(mode)
+        elif message.type == messages_pb2.ServerToClient.Type.Value('SCANNER_CONTEXT'):
+            print('scanner context')
             self.scanner.updateScanContext(message.scannerContext)
             if self.contextWait:
                 self.setWindowMode(common.WindowMode.SCANNER)
                 self.contextWait = False
         elif message.type == messages_pb2.ServerToClient.Type.Value('DEMOD_CONTEXT'):
+            print('demod context')
             self.scanner.updateDemodContext(message.demodContext)
+        #elif message.type == messages_pb2.ServerToClient.Type.Value('GENERAL_MESSAGE'):
+        elif message.WhichOneof('content') == 'signalLevel':
+            self.scanner.updateSignalIndicator(message.signalLevel.level)
+            
 
     def closeEvent(self, event):
         print('Exiting...')
@@ -113,7 +121,22 @@ class PiScanClient(QWidget, common.AppInterface):
         self.rcv_thread = Thread(target=self.receive)
         self.rcv_thread.start()
         self.contextWait = True
-        self.connectDialog.contextWait()
+        self.connectDialog.contextWait()  
+        sleep(1) ## TODO sync issue - the responses are received before the application is ready to process them
+        message1 = messages_pb2.ClientToServer()
+        message1.type = messages_pb2.ClientToServer.Type.Value('GENERAL_REQUEST')
+        message1.generalRequest.type = request_pb2.GeneralRequest.RequestType.Value('SCANNER_CONTEXT')
+        self.sock.send(message1.SerializeToString())
+        sleep(0.25)
+        message2 = messages_pb2.ClientToServer()
+        message2.type = messages_pb2.ClientToServer.Type.Value('GENERAL_REQUEST')
+        message2.generalRequest.type = request_pb2.GeneralRequest.RequestType.Value('DEMOD_CONTEXT')
+        self.sock.send(message2.SerializeToString())
+        sleep(0.25)
+        message3 = messages_pb2.ClientToServer()
+        message3.type = messages_pb2.ClientToServer.Type.Value('GENERAL_REQUEST')
+        message3.generalRequest.type = request_pb2.GeneralRequest.RequestType.Value('SYSTEM_INFO')
+        self.sock.send(message3.SerializeToString())
 
     def scan(self):
         message = messages_pb2.ClientToServer()
@@ -132,7 +155,13 @@ class PiScanClient(QWidget, common.AppInterface):
         message.type = messages_pb2.ClientToServer.Type.Value('SCANNER_STATE_REQUEST')
         message.scanStateRequest.state = request_pb2.ScannerStateRequest.NewState.Value('MANUAL')
         message.scanStateRequest.manFreq = frequency
+        message.scanStateRequest.manModulation = modulation
         self.sock.send(message.SerializeToString())
+
+    def showConnectDialog(self, errorMessage = ''):
+        self.clearWindowTitleInfo()
+        self.connectDialog.connectFailed(errorMessage)
+        self.setWindowMode(common.WindowMode.CONNECT)
 
     def showManualEntryDialog(self):
         self.lastMode = self.mode
@@ -169,6 +198,18 @@ class PiScanClient(QWidget, common.AppInterface):
 
     def tryConnect(self, address, port):
         self.connectDialog.tryConnect(address, port)
+
+    def setWindowTitleInfo(self, message):
+        if isinstance(self.parentWindow, QtWidgets.QMainWindow):
+            self.parentWindow.setWindowTitle('PiScan | ' + message)
+        else:
+            self.setWindowTitle('PiScan | ' + message)
+
+    def clearWindowTitleInfo(self):
+        if isinstance(self.parentWindow, QtWidgets.QMainWindow):
+            self.parentWindow.setWindowTitle('PiScan')
+        else:
+            self.setWindowTitle('PiScan')
 
 class HostWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, address=None, port=None):

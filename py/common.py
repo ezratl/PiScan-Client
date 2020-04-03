@@ -66,3 +66,9 @@ class AppInterface:
 
     def tryConnect(self, address, port):
         pass
+
+    def setWindowTitleInfo(self, message):
+        pass
+
+    def clearWindowTitleInfo(self):
+        pass

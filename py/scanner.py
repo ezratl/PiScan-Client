@@ -91,34 +91,32 @@ class Scanner:
     #def setMode(self, mode):
     #    self.contextStack.setCurrentIndex(mode.value)
 
+    def updateSignalIndicator(self, level):
+        self.sigStrengthBar.setValue(level)
+
     def updateScanContext(self, context):
         if context.state == context_pb2.ScannerContext.State.Value('SCAN'):
             #self.setMode(common.ScannerMode.SCANNING)
             self.contextStack.setCurrentWidget(self.scanPage)
             self.sigStrengthBar.setValue(0)
+            common.getApp().setWindowTitleInfo('Scanning')
         else:
-            if context.state == context_pb2.ScannerContext.State.Value('HOLD'):
-                self.sigStrengthBar.setValue(0)
-            elif context.state == context_pb2.ScannerContext.State.Value('RECEIVE'):
-                self.sigStrengthBar.setValue(100)
-
             try:
-                #entrynum.configure(text=context.entryIndex)
-                self.entryNumLabel.setText(context.entryIndex)
-                #systag.configure(text=context.systemTag)
-                self.systemTagLabel.setText(context.systemTag)
-                #entrytag.configure(text=context.entryTag)
-                self.entryTagLabel.setText(context.entryTag)
-                freq_formatted = str(float(context.freq) / 1000000)
-                #freq.configure(text=(freq_formatted + "MHz"))
+                entry = context.entryData
+                self.entryNumLabel.setText(entry.entryIndex)
+                self.systemTagLabel.setText(entry.systemTag)
+                self.entryTagLabel.setText(entry.entryTag)
+                freq_formatted = str(float(entry.freq) / 1000000)
                 self.frequencyLabel.setText((freq_formatted + " MHz"))
-                #modulation.configure(text=context.modulation)
-                self.modulationLabel.setText(context.modulation)
+                self.modulationLabel.setText(entry.modulation)
+
+                common.getApp().setWindowTitleInfo(entry.entryIndex + ': ' + entry.entryTag)
             except:
                 print('problem setting values')
 
             
             if context.state == context_pb2.ScannerContext.State.Value('HOLD'):
+                self.sigStrengthBar.setValue(0)
                 #self.setMode(common.ScannerMode.HOLD)
                 self.contextStack.setCurrentWidget(self.holdPage)
             elif context.state == context_pb2.ScannerContext.State.Value('RECEIVE'):
@@ -182,3 +180,11 @@ class Scanner:
         else:
             self.sidebarPanel.setVisible(True)
             self.sidebarOpen = True
+
+    def setSquelchRange(self, minimum, maximum):
+        self.squelchSlider.setMinimum(minimum)
+        self.squelchSlider.setMaximum(maximum)
+
+    def setGainRange(self, minimum, maximum):
+        self.gainSlider.setMinimum(minimum)
+        self.gainSlider.setMaximum(maximum)

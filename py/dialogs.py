@@ -59,8 +59,12 @@ class Dialogs:
         def onConfirm(self):
             freq = self.freqLineEdit.text()
             freq = int(float(freq) * 1000000)
-            common.getApp().manualEntry(freq, '')
+            mode = self.modulationCombo.currentText()
+            common.getApp().manualEntry(freq, mode)
             self.host.dialogReturn()
+
+        def addModulation(self, mode):
+            self.modulationCombo.addItem(mode)
 
     class EditEntry:
         def __init__(self, parent):

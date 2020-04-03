@@ -66,10 +66,8 @@ class ConnectDialog:
 
         except:
             e = sys.exc_info()[0]
-            print(e)
-            self.connectIndicator.setVisible(False)
-            self.errorLabel.setText(str(e))
-            self.errorLabel.setVisible(True)
+            self.connectFailed(repr(e))
+            
 
     def contextWait(self):
         self.connectIndicator.setVisible(True)
@@ -79,6 +77,16 @@ class ConnectDialog:
         self.confirmButton.setVisible(False)
         self.hostLabel.setVisible(False)
         self.portLabel.setVisible(False)
+
+    def connectFailed(self, message):
+        self.connectIndicator.setVisible(False)
+        self.errorLabel.setText(str(message))
+        self.errorLabel.setVisible(True)
+        self.hostLineEdit.setVisible(True)
+        self.portLineEdit.setVisible(True)
+        self.confirmButton.setVisible(True)
+        self.hostLabel.setVisible(True)
+        self.portLabel.setVisible(True)
 
 
 
