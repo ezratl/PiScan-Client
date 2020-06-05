@@ -25,7 +25,7 @@ The connect dialog will appear on opening, if an address wasn't already specifie
 
 Once you hit the `Connect` button it will attempt to connect to PiScan. Once successful, you will be presented with the scanner screen.
 #### Scanning
-![Scanner screen](img/client-idle.png) ![Scanner hold](img/client-hold.png)
+![Scanner screen](img/client-idle.PNG) ![Scanner hold](img/client-hold.PNG)
 
 Buttons:
 - `Scan`: resumes scanning from a paused state
@@ -39,4 +39,4 @@ Right sidebar:
 - The grey button left of the sliders will collapse/open the sidebar, to hide the sliders when they are not needed
 #### Manual Entry
 The dialog gives a text field to enter a frequency in MHz, as well as a drop down containing the modulations supported by the connected PiScan instance. Clicking `Tune` will request PiScan to tune to the manual channel you specified. If all the parameters are valid, it will hold and monitor the manual channel.
-![enter image description here](img/client-manentry.png)
+![Manual entry](img/client-manentry.PNG)
